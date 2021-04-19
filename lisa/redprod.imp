@@ -1,0 +1,31 @@
+class reducedProduct {
+	test1() {
+		def i = 5;
+		def j = 0;
+		def w = -1;
+	}
+
+	test2() {
+		def x = 0;
+		def y = 5 * 10 - 2;
+		def k = x / 2;
+	}
+
+	test3() {
+		def x = 0;
+		for (def i = 1; i < 5; i = i + 1)
+			def mod = i % 2;
+			mod = mod + 1;
+			if (mod == 0)
+				x = x + 5;
+			else
+				x = x - 100;
+		return x;
+	}
+
+	test4() {
+	    def x = 0;
+	    def y = 3;
+
+	}
+}
