@@ -253,7 +253,7 @@ public class Interval {
 		multiplyBounds(boundSet, l1, h2, lowInf, highInf);
 
 		// x2 * y1
-		multiplyBounds(boundSet, h2, l2, lowInf, highInf);
+		multiplyBounds(boundSet, h1, l2, lowInf, highInf);
 
 		// x2 * y2
 		multiplyBounds(boundSet, h1, h2, lowInf, highInf);
