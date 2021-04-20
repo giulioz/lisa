@@ -100,33 +100,18 @@ public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalP
 
 	@Override
 	protected IntervalParityDomain evalUnaryExpression(UnaryOperator operator, IntervalParityDomain arg, ProgramPoint pp) {
-		switch (operator) {
-			case NUMERIC_NEG:
-				return new IntervalParityDomain(arg.interval.minus(), arg.parity.minus());
-			case STRING_LENGTH:
-				return new IntervalParityDomain(arg.interval.strlen(), Parity.TOP);
-			default:
-				return top();
-		}
+		Interval interval = Interval.evalUnaryExpression(operator, arg.interval, pp);
+		Parity parity = Parity.evalUnaryExpression(operator, arg.parity, pp);
+		return new IntervalParityDomain(interval, parity);
 	}
 
 	@Override
 	protected IntervalParityDomain evalBinaryExpression(BinaryOperator operator, IntervalParityDomain left, IntervalParityDomain right,
 																											ProgramPoint pp) {
-		switch (operator) {
-			case NUMERIC_ADD:
-				return new IntervalParityDomain(left.interval.add(right.interval), left.parity.add(right.parity));
-			case NUMERIC_DIV:
-				return new IntervalParityDomain(left.interval.div(right.interval), left.parity.div(right.parity));
-			case NUMERIC_MOD:
-				return new IntervalParityDomain(left.interval.mod(right.interval), left.parity.mod(right.parity));
-			case NUMERIC_MUL:
-				return new IntervalParityDomain(left.interval.mul(right.interval), left.parity.mul(right.parity));
-			case NUMERIC_SUB:
-				return new IntervalParityDomain(left.interval.sub(right.interval), left.parity.sub(right.parity));
-			default:
-				return top();
-		}
+
+		Interval newInterval = Interval.evalBinaryExpression(operator, left.interval, right.interval, pp);
+		Parity newParity = Parity.evalBinaryExpression(operator, left.parity, right.parity, pp); 
+		return new IntervalParityDomain(newInterval, newParity );
 	}
 
 	@Override

@@ -88,11 +88,11 @@ public class Interval {
 		return true;
 	}
 
-	public Interval evalNullConstant(ProgramPoint pp) {
+	public static Interval evalNullConstant(ProgramPoint pp) {
 		return TOP;
 	}
 
-	public Interval evalNonNullConstant(Constant constant, ProgramPoint pp) {
+	public static Interval evalNonNullConstant(Constant constant, ProgramPoint pp) {
 		if (constant.getValue() instanceof Integer) {
 			Integer i = (Integer) constant.getValue();
 			return new Interval(i, i);
@@ -101,7 +101,7 @@ public class Interval {
 		return TOP;
 	}
 
-	public Interval evalUnaryExpression(UnaryOperator operator, Interval arg, ProgramPoint pp) {
+	public static Interval evalUnaryExpression(UnaryOperator operator, Interval arg, ProgramPoint pp) {
 		switch (operator) {
 			case NUMERIC_NEG:
 				if (arg.isTop)
@@ -121,7 +121,7 @@ public class Interval {
 		return low == n && high == n;
 	}
 
-	public Interval evalBinaryExpression(BinaryOperator operator, Interval left, Interval right, ProgramPoint pp) {
+	public static Interval evalBinaryExpression(BinaryOperator operator, Interval left, Interval right, ProgramPoint pp) {
 		switch (operator) {
 			case NUMERIC_ADD:
 				if (left.isTop || right.isTop)

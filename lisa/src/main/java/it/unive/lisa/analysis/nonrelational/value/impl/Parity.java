@@ -1,204 +1,170 @@
 package it.unive.lisa.analysis.nonrelational.value.impl;
 
+import it.unive.lisa.analysis.BaseLattice;
 import it.unive.lisa.analysis.Lattice;
+import it.unive.lisa.analysis.SemanticException;
+import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
+import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.BinaryOperator;
 import it.unive.lisa.symbolic.value.Constant;
+import it.unive.lisa.symbolic.value.Identifier;
+import it.unive.lisa.symbolic.value.UnaryOperator;
+import it.unive.lisa.symbolic.value.ValueExpression;
 
-enum Parity {
-	ODD {
-		@Override
-		Parity minus() {
-			return ODD;
-		}
+public class Parity {
 
-		@Override
-		Parity add(Parity other) {
-			// odd + even = odd
-			// odd + odd = even
-			// odd + top = top
-			// odd + bottom = bottom
-			if (other == EVEN) return ODD;
-			if (other == ODD) return EVEN;
-			return other;
-		}
+	public static final Parity EVEN = new Parity(false, false);
+	public static final Parity ODD = new Parity(false, false);
+	public static final Parity TOP = new Parity();
+	public static final Parity BOTTOM = new Parity(false, true);
 
-		@Override
-		Parity div(Parity other) {
-			// Can we calculate parity with div?
-			// Apparently not...
-			if (other == BOTTOM) return BOTTOM;
-			return TOP;
-		}
+	public final boolean isTop, isBottom;
 
-		@Override
-		Parity mul(Parity other) {
-			// odd × even = even
-			// odd × odd = odd
-			// odd × top = top
-			// odd × bottom = bottom
-			if (other == EVEN) return EVEN;
-			if (other == ODD) return ODD;
-			return other;
-		}
-
-		@Override
-		Parity mod(Parity other) {
-			// odd % even = odd   proof by induction?
-			// odd % odd = top		3 % 3 = even && 1 % 3 = odd 
-			// odd % top = top  
-			// odd % bottom = bottom
-			if (other == EVEN) return ODD;
-			if (other == ODD) return TOP;
-			return other;
-		}
-
-		@Override
-		public String toString() {
-			return "ODD";
-		}
-	},
-
-	EVEN {
-		@Override
-		Parity minus() {
-			return EVEN;
-		}
-
-		@Override
-		Parity add(Parity other) {
-			// even + even = even
-			// even + odd = odd
-			// even + top = top
-			// even + bottom = bottom
-			if (other == ODD) return ODD;
-			if (other == EVEN) return EVEN;
-			return other;
-		}
-
-		@Override
-		Parity div(Parity other) {
-			if (other == BOTTOM) return BOTTOM;
-			return TOP;
-		}
-
-		@Override
-		Parity mul(Parity other) {
-			// even × even = even
-			// even × odd = even
-			// even × top = top
-			// even × bottom = bottom
-			if (other == EVEN) return EVEN;
-			if (other == ODD) return ODD;
-			return other;
-		}
-
-		@Override
-		Parity mod(Parity other) {
-			// even % even = even  proof by induction?
-			// even % odd = top		2 % 3 = odd && 0 % 3 = even 
-			// even % top = top  
-			// even % bottom = bottom
-			if (other == EVEN) return EVEN;
-			if (other == ODD) return TOP;
-			return other;
-		}
-
-		@Override
-		public String toString() {
-			return "EVEN";
-		}
-	},
-
-	TOP {
-		@Override
-		Parity minus() {
-			return TOP;
-		}
-
-		@Override
-		Parity add(Parity other) {
-			if (other == BOTTOM) return BOTTOM;
-			return TOP;
-		}
-
-		@Override
-		Parity div(Parity other) {
-			if (other == BOTTOM) return BOTTOM;
-			return TOP;
-		}
-
-		@Override
-		Parity mul(Parity other) {
-			if (other == BOTTOM) return BOTTOM;
-			return TOP;
-		}
-
-		@Override
-		Parity mod(Parity other) {
-			if (other == BOTTOM) return BOTTOM;
-			return TOP;
-		}
-
-		@Override
-		public String toString() {
-			return Lattice.TOP_STRING;
-		}
-	},
-
-	BOTTOM {
-		@Override
-		Parity minus() {
-			return BOTTOM;
-		}
-
-		@Override
-		Parity add(Parity other) {
-			return BOTTOM;
-		}
-
-		@Override
-		Parity div(Parity other) {
-			return BOTTOM;
-		}
-
-		@Override
-		Parity mul(Parity other) {
-			return BOTTOM;
-		}
-
-		@Override
-		Parity mod(Parity other) {
-			return BOTTOM;
-		}
-
-		@Override
-		public String toString() {
-			return Lattice.BOTTOM_STRING;
-		}
-	};
-
-	abstract Parity minus();
-
-	abstract Parity add(Parity other);
-
-	final Parity sub(Parity other) {
-		return add(other.minus());
+	/**
+	 * Builds the parity abstract domain, representing the top of the parity
+	 * abstract domain.
+	 */
+	public Parity() {
+		this(true, false);
 	}
 
-	abstract Parity div(Parity other);
+	public Parity(boolean isTop, boolean isBottom) {
+		this.isTop = isTop;
+		this.isBottom = isBottom;
+	}
 
-	abstract Parity mul(Parity other);
-
-	abstract Parity mod(Parity other);
-
-	@Override
-	public abstract String toString();
-
-	static Parity evalNonNullConstant(Constant constant, ProgramPoint pp) {
-		if (constant.getValue() instanceof Integer) {
-			int c = (int) constant.getValue();
-			return c % 2 == 0 ? EVEN : ODD;
-		}
+	public Parity top() {
 		return TOP;
+	}
+
+	public boolean isTop() {
+		return isTop;
+	}
+
+	public Parity bottom() {
+		return BOTTOM;
+	}
+
+	public String representation() {
+		if (equals(BOTTOM))
+			return Lattice.BOTTOM_STRING;
+		else if (equals(EVEN))
+			return "Even";
+		else if (equals(ODD))
+			return "Odd";
+		else
+			return Lattice.TOP_STRING;
+	}
+
+	public static Parity evalNullConstant(ProgramPoint pp) {
+		return TOP;
+	}
+
+	public static Parity evalNonNullConstant(Constant constant, ProgramPoint pp) {
+		if (constant.getValue() instanceof Integer) {
+			Integer i = (Integer) constant.getValue();
+			return i % 2 == 0 ? EVEN : ODD;
+		}
+
+		return TOP;
+	}
+
+	public boolean isEven() {
+		return this == EVEN;
+	}
+
+	public boolean isOdd() {
+		return this == ODD;
+	}
+
+	public static Parity evalUnaryExpression(UnaryOperator operator, Parity arg, ProgramPoint pp) {
+		switch (operator) {
+		case NUMERIC_NEG:
+			return arg;
+		default:
+			return TOP;
+		}
+	}
+
+	public static Parity evalBinaryExpression(BinaryOperator operator, Parity left, Parity right, ProgramPoint pp) {
+		if (left.isTop() || right.isTop())
+			return TOP;
+
+		switch (operator) {
+		case NUMERIC_ADD:
+		case NUMERIC_SUB:
+			if (right.equals(left))
+				return EVEN;
+			else
+				return ODD;
+		case NUMERIC_MUL:
+			if (left.isEven() || right.isEven())
+				return EVEN;
+			else
+				return ODD;
+		case NUMERIC_DIV:
+			if (left.isOdd())
+				return right.isOdd() ? ODD : EVEN;
+			else
+				return right.isOdd() ? EVEN : TOP;
+		case NUMERIC_MOD:
+			return TOP;
+		default:
+			return TOP;
+		}
+	}
+
+	public Parity lubAux(Parity other) throws SemanticException {
+		return TOP;
+	}
+
+	public Parity wideningAux(Parity other) throws SemanticException {
+		return lubAux(other);
+	}
+
+	public boolean lessOrEqualAux(Parity other) throws SemanticException {
+		return false;
+	}
+
+	public int hashCode() {
+		if (isBottom())
+			return 1;
+		else if (this == EVEN)
+			return 2;
+		else if (this == ODD)
+			return 3;
+		else
+			return 4;
+	}
+
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Parity other = (Parity) obj;
+		if (isBottom != other.isBottom)
+			return false;
+		if (isTop != other.isTop)
+			return false;
+		return isTop && other.isTop;
+	}
+
+	public ValueEnvironment<Parity> assumeBinaryExpression(
+			ValueEnvironment<Parity> environment, BinaryOperator operator, ValueExpression left,
+			ValueExpression right, ProgramPoint pp) throws SemanticException {
+		switch (operator) {
+		case COMPARISON_EQ:
+			if (left instanceof Identifier)
+				environment = environment.assign((Identifier) left, right, pp);
+			else if (right instanceof Identifier)
+				environment = environment.assign((Identifier) right, left, pp);
+			return environment;
+		default:
+			return environment;
+		}
 	}
 }
