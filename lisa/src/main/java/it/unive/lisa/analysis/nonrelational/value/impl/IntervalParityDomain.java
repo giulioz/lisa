@@ -17,8 +17,18 @@ public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalP
 	}
 
 	private IntervalParityDomain(Interval interval, Parity parity) {
-		this.interval = interval;
-		this.parity = parity;
+		this.interval = reduceInterval(interval, parity);
+		this.parity = reduceParity(parity, interval);
+	}
+
+	private Interval reduceInterval(Interval interval, Parity parity){
+		// TODO
+		return interval;
+	}
+	
+	private Parity reduceParity(Parity parity, Interval interval){
+		// TODO
+		return parity;
 	}
 
 	@Override
@@ -93,16 +103,16 @@ public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalP
 
 	@Override
 	protected IntervalParityDomain evalNonNullConstant(Constant constant, ProgramPoint pp) {
-		Interval interval = Interval.evalNonNullConstant(constant, pp);
-		Parity parity = Parity.evalNonNullConstant(constant, pp);
-		return new IntervalParityDomain(interval, parity);
+		Interval newInterval = Interval.evalNonNullConstant(constant, pp);
+		Parity newParity = Parity.evalNonNullConstant(constant, pp);
+		return new IntervalParityDomain(newInterval, newParity);
 	}
 
 	@Override
 	protected IntervalParityDomain evalUnaryExpression(UnaryOperator operator, IntervalParityDomain arg, ProgramPoint pp) {
-		Interval interval = Interval.evalUnaryExpression(operator, arg.interval, pp);
-		Parity parity = Parity.evalUnaryExpression(operator, arg.parity, pp);
-		return new IntervalParityDomain(interval, parity);
+		Interval newInterval = Interval.evalUnaryExpression(operator, arg.interval, pp);
+		Parity newParity = Parity.evalUnaryExpression(operator, arg.parity, pp);
+		return new IntervalParityDomain(newInterval, newParity);
 	}
 
 	@Override
@@ -111,7 +121,7 @@ public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalP
 
 		Interval newInterval = Interval.evalBinaryExpression(operator, left.interval, right.interval, pp);
 		Parity newParity = Parity.evalBinaryExpression(operator, left.parity, right.parity, pp); 
-		return new IntervalParityDomain(newInterval, newParity );
+		return new IntervalParityDomain(newInterval, newParity);
 	}
 
 	@Override

@@ -156,14 +156,7 @@ public class Interval {
 				return TOP;
 		}
 	}
-	/* 
-	evalBinaryExpressionWithParity(...){
-		if(parity === Parity.TOP)
-			return evalBinaryExpression(...)
-		else 
-			return evalEvenBinaryExpression(..) || evalOddBinaryExpression(..)
-	}
-	*/
+	
 	public Interval evalTernaryExpression(TernaryOperator operator, Interval left, Interval middle, Interval right,
 																				ProgramPoint pp) {
 		return TOP;
