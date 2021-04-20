@@ -1,9 +1,8 @@
 package it.unive.lisa.analysis.nonrelational.value.impl;
 
-import it.unive.lisa.analysis.BaseLattice;
 import it.unive.lisa.analysis.Lattice;
 import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
+import it.unive.lisa.analysis.nonrelational.value.NonRelationalValueDomain;
 import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryOperator;
@@ -41,12 +40,28 @@ public class Parity {
 	public boolean isTop() {
 		return isTop;
 	}
-
+	
 	public Parity bottom() {
 		return BOTTOM;
 	}
+	
+	public boolean isBottom() {
+		return isBottom;
+	}
 
 	public String representation() {
+		if (equals(BOTTOM))
+			return Lattice.BOTTOM_STRING;
+		else if (equals(EVEN))
+			return "Even";
+		else if (equals(ODD))
+			return "Odd";
+		else
+			return Lattice.TOP_STRING;
+	}
+	
+	@Override
+	public String toString() {
 		if (equals(BOTTOM))
 			return Lattice.BOTTOM_STRING;
 		else if (equals(EVEN))
@@ -153,8 +168,8 @@ public class Parity {
 		return isTop && other.isTop;
 	}
 
-	public ValueEnvironment<Parity> assumeBinaryExpression(
-			ValueEnvironment<Parity> environment, BinaryOperator operator, ValueExpression left,
+	public <T extends NonRelationalValueDomain<T>> ValueEnvironment<T> assumeBinaryExpression(
+			ValueEnvironment<T> environment, BinaryOperator operator, ValueExpression left,
 			ValueExpression right, ProgramPoint pp) throws SemanticException {
 		switch (operator) {
 		case COMPARISON_EQ:
