@@ -126,11 +126,11 @@ public class Interval {
 			case NUMERIC_ADD:
 				if (left.isTop || right.isTop)
 					return TOP;
-				return left.plus(right);
+				return left.add(right);
 			case NUMERIC_SUB:
 				if (left.isTop || right.isTop)
 					return TOP;
-				return left.diff(right);
+				return left.sub(right);
 			case NUMERIC_MUL:
 				if (left.is(0) || right.is(0))
 					return new Interval(0, 0);
@@ -209,7 +209,7 @@ public class Interval {
 		return high == null;
 	}
 
-	public Interval plus(Interval other) {
+	public Interval add(Interval other) {
 		Integer newLow, newHigh;
 
 		if (lowIsMinusInfinity() || other.lowIsMinusInfinity())
@@ -225,7 +225,7 @@ public class Interval {
 		return new Interval(newLow, newHigh);
 	}
 
-	public Interval diff(Interval other) {
+	public Interval sub(Interval other) {
 		Integer newLow, newHigh;
 
 		if (other.highIsPlusInfinity() || lowIsMinusInfinity())
@@ -293,6 +293,10 @@ public class Interval {
 		divideBounds(boundSet, h1, h2, lowInf, highInf);
 
 		return new Interval(lowInf.get() ? null : boundSet.first(), highInf.get() ? null : boundSet.last());
+	}
+
+	public Interval mod(Interval other) {
+		return TOP;
 	}
 
 	public void multiplyBounds(SortedSet<Integer> boundSet, Integer i, Integer j, AtomicBoolean lowInf,
