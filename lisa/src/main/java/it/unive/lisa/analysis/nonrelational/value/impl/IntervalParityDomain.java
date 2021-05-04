@@ -2,33 +2,63 @@ package it.unive.lisa.analysis.nonrelational.value.impl;
 
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
+
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryOperator;
 import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.TernaryOperator;
 import it.unive.lisa.symbolic.value.UnaryOperator;
 
+// Ciao
 public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalParityDomain> {
 	private final Interval interval;
 	private final Parity parity;
 
 	public IntervalParityDomain() {
-		this(Interval.BOTTOM, Parity.TOP);
+		this(Interval.TOP, Parity.TOP);
 	}
 
 	private IntervalParityDomain(Interval interval, Parity parity) {
 		this.interval = reduceInterval(interval, parity);
-		this.parity = reduceParity(parity, interval);
+		this.parity = reduceParity(parity, this.interval);
 	}
 
-	private Interval reduceInterval(Interval interval, Parity parity){
-		// TODO
+	private Interval reduceInterval(Interval interval, Parity parity) {
+		// [0,6] + Odd => [1,5]
+		if (!interval.isBottom && !interval.isTop) {
+			Parity highParity = Parity.getFromInt(interval.high);
+			Parity lowParity = Parity.getFromInt(interval.low);
+
+			Integer newHigh = interval.high;
+			Integer newLow = interval.low;
+
+			if (!highParity.equals(parity) && newHigh != null) {
+				newHigh--;
+			}
+
+			if (!lowParity.equals(parity) && newLow != null) {
+				newLow++;
+			}
+
+			return new Interval(newLow, newHigh);
+		}
 		return interval;
 	}
-	
-	private Parity reduceParity(Parity parity, Interval interval){
-		// TODO
-		return parity;
+
+	private Parity reduceParity(Parity parity, Interval interval) {
+		// [N,N]+TOP where N ODD => [N,N]+ODD
+		// [N,N]+TOP where N EVEN => [N,N]+EVEN
+
+		// [N,N]+ODD where N EVEN => [N,N]+TOP
+		// [N,N]+EVEN where N ODD => [N,N]+TOP
+
+		// [2,2]+ODD =>
+
+		// else return parity
+		if (interval.isSingleton()) {
+			return Parity.getFromInt(interval.low);
+		}
+		return !parity.equals(Parity.getFromInt(interval.low)) ? Parity.TOP : parity;
 	}
 
 	@Override
@@ -109,24 +139,25 @@ public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalP
 	}
 
 	@Override
-	protected IntervalParityDomain evalUnaryExpression(UnaryOperator operator, IntervalParityDomain arg, ProgramPoint pp) {
+	protected IntervalParityDomain evalUnaryExpression(UnaryOperator operator, IntervalParityDomain arg,
+			ProgramPoint pp) {
 		Interval newInterval = Interval.evalUnaryExpression(operator, arg.interval, pp);
 		Parity newParity = Parity.evalUnaryExpression(operator, arg.parity, pp);
 		return new IntervalParityDomain(newInterval, newParity);
 	}
 
 	@Override
-	protected IntervalParityDomain evalBinaryExpression(BinaryOperator operator, IntervalParityDomain left, IntervalParityDomain right,
-																											ProgramPoint pp) {
+	protected IntervalParityDomain evalBinaryExpression(BinaryOperator operator, IntervalParityDomain left,
+			IntervalParityDomain right, ProgramPoint pp) {
 
 		Interval newInterval = Interval.evalBinaryExpression(operator, left.interval, right.interval, pp);
-		Parity newParity = Parity.evalBinaryExpression(operator, left.parity, right.parity, pp); 
+		Parity newParity = Parity.evalBinaryExpression(operator, left.parity, right.parity, pp);
 		return new IntervalParityDomain(newInterval, newParity);
 	}
 
 	@Override
-	protected IntervalParityDomain evalTernaryExpression(TernaryOperator operator, IntervalParityDomain left, IntervalParityDomain middle,
-																											 IntervalParityDomain right, ProgramPoint pp) {
+	protected IntervalParityDomain evalTernaryExpression(TernaryOperator operator, IntervalParityDomain left,
+			IntervalParityDomain middle, IntervalParityDomain right, ProgramPoint pp) {
 		return top();
 	}
 }

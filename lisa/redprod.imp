@@ -26,6 +26,28 @@ class reducedProduct {
 	test4() {
 	    def x = 0;
 	    def y = 3;
-
 	}
+
+	test5(x) {
+	  def mod = x % 3;
+		mod = mod - 3;
+		return mod;
+	} 
+
+	test6(x) {
+		if (x % 2 == 0)
+			return 0;
+		else
+			return x * 2;
+	}
+
+	testP1() {
+		def x = 7;
+		def y = 14;
+		def a = x * y;
+		def b = y % 2;
+		def r = a > 0 && b == 0;
+		return r;
+	}
+
 }

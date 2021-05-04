@@ -121,6 +121,13 @@ public class Interval {
 		return low == n && high == n;
 	}
 
+	public boolean isSingleton() {
+		if (low == null || high == null)
+			return false;
+
+		return low == high;
+	}
+
 	public static Interval evalBinaryExpression(BinaryOperator operator, Interval left, Interval right, ProgramPoint pp) {
 		switch (operator) {
 			case NUMERIC_ADD:
@@ -151,14 +158,30 @@ public class Interval {
 
 				return left.div(right);
 			case NUMERIC_MOD:
+				// [A,B] % [C,D] => [max(A,0), D]
+				// [1,50] % [2,5] => [1,5]
+				// TODO
+				if (right.isSingleton()) {
+					return new Interval(0, right.high);
+				}
+				return TOP;
+			case COMPARISON_EQ:
+				return TOP;
+			case COMPARISON_GE:
+				return TOP;
+			case COMPARISON_GT:
+				return TOP;
+			case COMPARISON_LE:
+				return TOP;
+			case COMPARISON_LT:
 				return TOP;
 			default:
 				return TOP;
 		}
 	}
-	
+
 	public Interval evalTernaryExpression(TernaryOperator operator, Interval left, Interval middle, Interval right,
-																				ProgramPoint pp) {
+			ProgramPoint pp) {
 		return TOP;
 	}
 
@@ -171,7 +194,7 @@ public class Interval {
 	public Interval glbAux(Interval other) {
 		Integer newLow = lowIsMinusInfinity() ? other.low : other.lowIsMinusInfinity() ? low : Math.max(low, other.low);
 		Integer newHigh = highIsPlusInfinity() ? other.high
-						: other.highIsPlusInfinity() ? high : Math.min(high, other.high);
+				: other.highIsPlusInfinity() ? high : Math.min(high, other.high);
 		return new Interval(newLow, newHigh);
 	}
 
@@ -293,7 +316,7 @@ public class Interval {
 	}
 
 	public void multiplyBounds(SortedSet<Integer> boundSet, Integer i, Integer j, AtomicBoolean lowInf,
-														 AtomicBoolean highInf) {
+			AtomicBoolean highInf) {
 		if (i == null) {
 			if (j == null)
 				// -inf * -inf = +inf
@@ -322,7 +345,7 @@ public class Interval {
 	}
 
 	public void divideBounds(SortedSet<Integer> boundSet, Integer i, Integer j, AtomicBoolean lowInf,
-													 AtomicBoolean highInf) {
+			AtomicBoolean highInf) {
 		if (i == null) {
 			if (j == null)
 				// -inf * -inf = +inf
@@ -355,8 +378,8 @@ public class Interval {
 
 	/**
 	 * Given two interval lower bounds, yields {@code true} iff l1 >= l2, taking
-	 * into account -Inf values (i.e., when l1 or l2 is {@code null}.) This
-	 * method is used for the implementation of {@link Interval#lessOrEqualAux}.
+	 * into account -Inf values (i.e., when l1 or l2 is {@code null}.) This method
+	 * is used for the implementation of {@link Interval#lessOrEqualAux}.
 	 *
 	 * @param l1 the lower bound of the first interval.
 	 * @param l2 the lower bounds of the second interval.
@@ -378,8 +401,8 @@ public class Interval {
 
 	/**
 	 * Given two interval upper bounds, yields {@code true} iff h1 <= h2, taking
-	 * into account +Inf values (i.e., when h1 or h2 is {@code null}.) This
-	 * method is used for the implementation of {@link Interval#lessOrEqualAux}.
+	 * into account +Inf values (i.e., when h1 or h2 is {@code null}.) This method
+	 * is used for the implementation of {@link Interval#lessOrEqualAux}.
 	 *
 	 * @param h1 the upper bound of the first interval.
 	 * @param h2 the upper bounds of the second interval.
