@@ -9,7 +9,6 @@ import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.TernaryOperator;
 import it.unive.lisa.symbolic.value.UnaryOperator;
 
-// Ciao
 public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalParityDomain> {
 	private final Interval interval;
 	private final Parity parity;
@@ -19,24 +18,35 @@ public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalP
 	}
 
 	private IntervalParityDomain(Interval interval, Parity parity) {
-		this.interval = reduceInterval(interval, parity);
-		this.parity = reduceParity(parity, this.interval);
+		Interval reducedInterval = new Interval(interval);
+		Parity reducedParity = parity;
+		Interval previousInterval;
+		Parity previousParity;
+		// Granger's product impl
+		do {
+			previousInterval = new Interval(reducedInterval);
+			previousParity = reducedParity;
+			reducedInterval = reduceInterval(previousInterval, previousParity);
+			reducedParity = reduceParity(previousParity, previousInterval);
+		} while (!reducedInterval.equals(previousInterval) || reducedParity != previousParity);
+		this.interval = reducedInterval;
+		this.parity = reducedParity;
 	}
 
 	private Interval reduceInterval(Interval interval, Parity parity) {
 		// [0,6] + Odd => [1,5]
-		if (!interval.isBottom && !interval.isTop) {
+		if (!interval.isBottom && !interval.isTop && !parity.isBottom() && !parity.isTop()) {
 			Parity highParity = Parity.getFromInt(interval.high);
 			Parity lowParity = Parity.getFromInt(interval.low);
 
 			Integer newHigh = interval.high;
 			Integer newLow = interval.low;
 
-			if (!highParity.equals(parity) && newHigh != null) {
+			if (highParity != parity && newHigh != null) {
 				newHigh--;
 			}
 
-			if (!lowParity.equals(parity) && newLow != null) {
+			if (lowParity != parity && newLow != null) {
 				newLow++;
 			}
 

@@ -34,6 +34,10 @@ public class Interval {
 		this(low, high, false, false);
 	}
 
+	public Interval(Interval interval) {
+		this(interval.low, interval.high, interval.isTop, interval.isBottom);
+	}
+
 	/**
 	 * Builds the top interval.
 	 */
