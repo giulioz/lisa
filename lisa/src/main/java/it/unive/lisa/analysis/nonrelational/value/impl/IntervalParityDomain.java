@@ -3,6 +3,7 @@ package it.unive.lisa.analysis.nonrelational.value.impl;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 
+import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.BinaryOperator;
 import it.unive.lisa.symbolic.value.Constant;
@@ -117,8 +118,8 @@ public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalP
 	}
 
 	@Override
-	public String representation() {
-		return "[" + interval.toString() + " ; " + parity.toString() + "]";
+	public StringRepresentation representation() {
+		return new StringRepresentation("[" + interval.toString() + " ; " + parity.toString() + "]");
 	}
 
 	@Override
