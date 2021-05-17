@@ -185,7 +185,13 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 
 			return left.div(right);
 		case NUMERIC_MOD:
-			return top();
+			// [A,B] % [C,D] => [max(A,0), D]
+			// [1,50] % [2,5] => [1,5]
+			// TODO
+			if (right.isSingleton()) {
+				return new Interval(0, right.high - 1);
+			}
+			return TOP;
 		default:
 			return top();
 		}
@@ -338,8 +344,8 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 			return result;
 	}
 
-	private boolean isSingleton() {
-		return low != null && low == high;
+	public boolean isSingleton() {
+		return low != null && low.equals(high);
 	}
 
 	@Override

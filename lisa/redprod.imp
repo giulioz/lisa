@@ -9,6 +9,7 @@ class reducedProduct {
 		def x = 0;
 		def y = 5 * 10 - 2;
 		def k = x / 2;
+		x = x + 1;
 	}
 
 	test3() {
@@ -29,10 +30,11 @@ class reducedProduct {
 	}
 
 	test5(x) {
-	  def mod = x % 3;
-		mod = mod - 3;
-		return mod;
-	} 
+        def mod = x % 3;
+        mod = mod - 3;
+        def mod2 = 4 % mod;
+        return mod2;
+	}
 
 	test6(x) {
 		if (x % 2 == 0)

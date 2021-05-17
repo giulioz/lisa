@@ -78,6 +78,13 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 		return new StringRepresentation(repr);
 	}
 
+	public static Parity getFromInt(Integer x){
+		if (x != null) {
+			return x % 2 == 0 ? EVEN : ODD;
+		}
+		return TOP;
+	}
+
 	@Override
 	protected Parity evalNullConstant(ProgramPoint pp) {
 		return top();
@@ -113,12 +120,12 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 
 	@Override
 	protected Parity evalBinaryExpression(BinaryOperator operator, Parity left, Parity right, ProgramPoint pp) {
-		if (left.isTop() || right.isTop())
-			return top();
-
 		switch (operator) {
 		case NUMERIC_ADD:
 		case NUMERIC_SUB:
+			if (left.isTop() || right.isTop()){
+				return top();
+			}
 			if (right.equals(left))
 				return EVEN;
 			else
@@ -126,9 +133,15 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 		case NUMERIC_MUL:
 			if (left.isEven() || right.isEven())
 				return EVEN;
+			if (left.isTop() || right.isTop()){
+				return top();
+			}
 			else
 				return ODD;
 		case NUMERIC_DIV:
+			if (left.isTop() || right.isTop()){
+				return top();
+			}
 			if (left.isOdd())
 				return right.isOdd() ? ODD : EVEN;
 			else
