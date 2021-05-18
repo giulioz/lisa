@@ -82,9 +82,6 @@ public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParity
 	protected IntervalParityDomain postEval(IntervalParityDomain result, ValueExpression expression,
 											ValueEnvironment<IntervalParityDomain> environment, ProgramPoint pp) throws SemanticException {
 		if (expression instanceof BinaryExpression) {
-			// if (p1 == even && p2 == even) => p1
-			// ([2,4], even) % ([8,10], even) => ([?,?], even)
-
 			BinaryOperator op = ((BinaryExpression) expression).getOperator();
 			if (op == BinaryOperator.NUMERIC_MOD) {
 				// ([a,b], p1) % ([c,d], p2)
@@ -93,12 +90,12 @@ public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParity
 				ValueExpression leftExpr = (ValueExpression) ((BinaryExpression) expression).getLeft();
 				ValueExpression rightExpr = (ValueExpression) ((BinaryExpression) expression).getRight();
 				Parity parityLeft = right.eval(leftExpr, makeRightEnv(environment), pp);
-				Interval intervalLeft = left.eval(leftExpr, makeLeftEnv(environment), pp);
-				Interval intervalRight = left.eval(rightExpr, makeLeftEnv(environment), pp);
+				Parity parityRight = right.eval(rightExpr, makeRightEnv(environment), pp);
 
-				// if (c == d == 2 && a == b) => ([0,1], p1)
+				// if (p1 == even && p2 == even) => p1
+				// ([2,4], even) % ([8,10], even) => ([?,?], even)
 				// ([3,3], odd) % ([2,2], even) => ([0,1], odd)
-				if (intervalLeft.isSingleton() && intervalRight.isSingleton() && intervalRight.getHigh() == 2) {
+				if (parityRight.isEven()) {
 					return mk(result.left, parityLeft);
 				}
 			}
