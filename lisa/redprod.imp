@@ -24,9 +24,19 @@ class reducedProduct {
 		return x;
 	}
 
-	test4() {
-	    def x = 0;
-	    def y = 3;
+	test4(x) {
+	    if (x >= 0) {
+            def a_p = x % 2 * 2 + 2;
+            def b_p = x % 2 * 2 + 8;
+            def c = a_p % b_p;
+            def e = c % 2;
+            if (e == 0)
+                return 1;
+            else
+                return 2;
+            return d;
+        } else
+            return 0;
 	}
 
 	test5(x) {
@@ -48,8 +58,11 @@ class reducedProduct {
 		def y = 14;
 		def a = x * y;
 		def b = y % 2;
-		def r = a > 0 && b == 0;
-		return r;
+		if (a > 0 && b == 0) {
+		    return 0;
+		} else {
+		    return 1;
+		}
 	}
 
 }
