@@ -13,9 +13,8 @@ import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
 
-public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<C, T1, T2>,
-		T1 extends NonRelationalValueDomain<T1> & Lattice<T1>,
-		T2 extends NonRelationalValueDomain<T2> & Lattice<T2>> implements NonRelationalValueDomain<C>, Lattice<C> {
+public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<C, T1, T2>, T1 extends NonRelationalValueDomain<T1> & Lattice<T1>, T2 extends NonRelationalValueDomain<T2> & Lattice<T2>>
+		implements NonRelationalValueDomain<C>, Lattice<C> {
 
 	/**
 	 * The left-hand side abstract domain.
@@ -77,13 +76,13 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 			String result = "";
 			if (!leftEnv.isTop() && !leftEnv.isBottom()) {
 				for (Identifier x : leftEnv.getKeys())
-					result += x + ": (" + leftEnv.getState(x).representation() + ", "
-							+ rightEnv.getState(x).representation() + ")\n";
+					result += x + ": (" + leftEnv.getState(x).representation() + ", " + rightEnv.getState(x).representation()
+							+ ")\n";
 				return result;
 			} else if (!rightEnv.isTop() && !rightEnv.isBottom()) {
 				for (Identifier x : rightEnv.getKeys())
-					result += x + ": (" + leftEnv.getState(x).representation() + ", "
-							+ rightEnv.getState(x).representation() + ")\n";
+					result += x + ": (" + leftEnv.getState(x).representation() + ", " + rightEnv.getState(x).representation()
+							+ ")\n";
 				return result;
 			}
 		}
@@ -96,13 +95,16 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 	 *
 	 * @param left  the first domain
 	 * @param right the second domain
-	 *
 	 * @return the new instance of product
 	 */
 	protected abstract C mk(T1 left, T2 right);
 
 	protected abstract T1 rhoLeft(C domain);
+
 	protected abstract T2 rhoRight(C domain);
+
+	protected abstract C postEval(C result, ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp)
+			throws SemanticException;
 
 	private C grangerProduct(C value) {
 		T1 reducedLeft = value.left;
@@ -118,7 +120,23 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 		return mk(reducedLeft, reducedRight);
 	}
 
-	private ValueEnvironment<T1> makeLeftEnv(ValueEnvironment<C> environment) {
+	private C grangerProductExp(C value, ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp)
+			throws SemanticException {
+		T1 reducedLeft = value.left;
+		T2 reducedRight = value.right;
+		T1 previousLeft;
+		T2 previousRight;
+		do {
+			previousLeft = reducedLeft;
+			previousRight = reducedRight;
+			C postEvalProcessed = postEval(mk(reducedLeft, reducedRight), expression, environment, pp);
+			reducedLeft = rhoLeft(postEvalProcessed);
+			reducedRight = rhoRight(postEvalProcessed);
+		} while (!reducedLeft.equals(previousLeft) || reducedRight != previousRight);
+		return mk(reducedLeft, reducedRight);
+	}
+
+	protected ValueEnvironment<T1> makeLeftEnv(ValueEnvironment<C> environment) {
 		ValueEnvironment<T1> newEnv = new ValueEnvironment<T1>(left);
 		for (var i : environment) {
 			newEnv.getMap().put(i.getKey(), i.getValue().left);
@@ -126,7 +144,7 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 		return newEnv;
 	}
 
-	private ValueEnvironment<T2> makeRightEnv(ValueEnvironment<C> environment) {
+	protected ValueEnvironment<T2> makeRightEnv(ValueEnvironment<C> environment) {
 		ValueEnvironment<T2> newEnv = new ValueEnvironment<T2>(right);
 		for (var i : environment) {
 			newEnv.getMap().put(i.getKey(), i.getValue().right);
@@ -134,7 +152,7 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 		return newEnv;
 	}
 
-	private ValueEnvironment<C> mergeEnv(ValueEnvironment<T1> le, ValueEnvironment<T2> re) {
+	protected ValueEnvironment<C> mergeEnv(ValueEnvironment<T1> le, ValueEnvironment<T2> re) {
 		ValueEnvironment<C> newEnv = new ValueEnvironment<C>(mk(left, right));
 		for (var k : le.getKeys()) {
 			newEnv.getMap().put(k, mk(le.getMap().get(k), re.getMap().get(k)));
@@ -144,19 +162,22 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 
 	@Override
 	public C eval(ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp) throws SemanticException {
-		C value =  mk(left.eval(expression, makeLeftEnv(environment), pp), right.eval(expression, makeRightEnv(environment), pp));
-		return grangerProduct(value);
+		C value = mk(left.eval(expression, makeLeftEnv(environment), pp),
+				right.eval(expression, makeRightEnv(environment), pp));
+		return grangerProductExp(value, expression, environment, pp);
 	}
 
 	@Override
-	public SemanticDomain.Satisfiability satisfies(ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp) throws SemanticException {
+	public SemanticDomain.Satisfiability satisfies(ValueExpression expression, ValueEnvironment<C> environment,
+			ProgramPoint pp) throws SemanticException {
 		SemanticDomain.Satisfiability sLeft = left.satisfies(expression, makeLeftEnv(environment), pp);
 		SemanticDomain.Satisfiability sRight = right.satisfies(expression, makeRightEnv(environment), pp);
 		return sLeft.and(sRight);
 	}
 
 	@Override
-	public ValueEnvironment<C> assume(ValueEnvironment<C> environment, ValueExpression expression, ProgramPoint pp) throws SemanticException {
+	public ValueEnvironment<C> assume(ValueEnvironment<C> environment, ValueExpression expression, ProgramPoint pp)
+			throws SemanticException {
 		ValueEnvironment<T1> leftAssume = left.assume(makeLeftEnv(environment), expression, pp);
 		ValueEnvironment<T2> rightAssume = right.assume(makeRightEnv(environment), expression, pp);
 		return mergeEnv(leftAssume, rightAssume);

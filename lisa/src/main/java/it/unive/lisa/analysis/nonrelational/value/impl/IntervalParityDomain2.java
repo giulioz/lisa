@@ -1,9 +1,14 @@
 package it.unive.lisa.analysis.nonrelational.value.impl;
 
-
+import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.combination.ReducedCartesianProduct;
 import it.unive.lisa.analysis.impl.numeric.Interval;
 import it.unive.lisa.analysis.impl.numeric.Parity;
+import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
+import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.BinaryExpression;
+import it.unive.lisa.symbolic.value.BinaryOperator;
+import it.unive.lisa.symbolic.value.ValueExpression;
 
 public class IntervalParityDomain2 extends ReducedCartesianProduct<IntervalParityDomain2, Interval, Parity> {
 
@@ -39,8 +44,8 @@ public class IntervalParityDomain2 extends ReducedCartesianProduct<IntervalParit
 	protected Interval rhoLeft(IntervalParityDomain2 domain) {
 		Interval interval = domain.left;
 		Parity parity = domain.right;
-		
-		if (isIntervalParityInvalid(interval, parity)){
+
+		if (isIntervalParityInvalid(interval, parity)) {
 			return interval.bottom();
 		}
 
@@ -53,37 +58,11 @@ public class IntervalParityDomain2 extends ReducedCartesianProduct<IntervalParit
 				return new Interval(interval.getLow(), interval.getHigh() - 1);
 			}
 		}
-
-		// if (!interval.isBottom() && !interval.isTop() && !parity.isBottom() && !parity.isTop()) {
-		// 	Parity highParity = Parity.getFromInt(interval.getHigh());
-		// 	Parity lowParity = Parity.getFromInt(interval.getLow());
-
-		// 	Integer newHigh = interval.getHigh();
-		// 	Integer newLow = interval.getLow();
-
-		// 	if (highParity != parity && newHigh != null) {
-		// 		newHigh--;
-		// 	}
-
-		// 	if (lowParity != parity && newLow != null) {
-		// 		newLow++;
-		// 	}
-
-		// 	return new Interval(newLow, newHigh);
-		// }
 		return interval;
 	}
 
 	@Override
 	protected Parity rhoRight(IntervalParityDomain2 domain) {
-		// [N,N]+TOP where N ODD => [N,N]+ODD
-		// [N,N]+TOP where N EVEN => [N,N]+EVEN
-
-		// [N,N]+ODD where N EVEN => [N,N]+TOP
-		// [N,N]+EVEN where N ODD => [N,N]+TOP
-
-		// [2,2]+ODD => BOTTOM
-
 		Interval interval = domain.left;
 		Parity parity = domain.right;
 
@@ -95,7 +74,36 @@ public class IntervalParityDomain2 extends ReducedCartesianProduct<IntervalParit
 			Integer value = interval.getLow();
 			return Parity.getFromInt(value);
 		}
-		
+
 		return parity;
+	}
+
+	@Override
+	protected IntervalParityDomain2 postEval(IntervalParityDomain2 result, ValueExpression expression,
+			ValueEnvironment<IntervalParityDomain2> environment, ProgramPoint pp) throws SemanticException {
+		if (expression instanceof BinaryExpression) {
+			// if (p1 == even && p2 == even) => p1
+			// ([2,4], even) % ([8,10], even) => ([?,?], even)
+
+			BinaryOperator op = ((BinaryExpression) expression).getOperator();
+			if (op == BinaryOperator.NUMERIC_MOD) {
+				// ([a,b], p1) % ([c,d], p2)
+				// leftExpr rightExpr
+
+				ValueExpression leftExpr = (ValueExpression) ((BinaryExpression) expression).getLeft();
+				ValueExpression rightExpr = (ValueExpression) ((BinaryExpression) expression).getRight();
+				Parity parityLeft = right.eval(leftExpr, makeRightEnv(environment), pp);
+				Interval intervalLeft = left.eval(leftExpr, makeLeftEnv(environment), pp);
+				Interval intervalRight = left.eval(rightExpr, makeLeftEnv(environment), pp);
+
+				// if (c == d == 2 && a == b) => ([0,1], p1)
+				// ([3,3], odd) % ([2,2], even) => ([0,1], odd)
+				if (intervalLeft.isSingleton() && intervalRight.isSingleton() && intervalRight.getHigh() == 2) {
+					return mk(result.left, parityLeft);
+				}
+			}
+		}
+
+		return result;
 	}
 }
