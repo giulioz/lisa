@@ -1,174 +1,109 @@
 package it.unive.lisa.analysis.nonrelational.value.impl;
 
 import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
-
-import it.unive.lisa.analysis.representation.StringRepresentation;
+import it.unive.lisa.analysis.nonrelational.combination.ReducedCartesianProduct;
+import it.unive.lisa.analysis.impl.numeric.Interval;
+import it.unive.lisa.analysis.impl.numeric.Parity;
+import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.BinaryExpression;
 import it.unive.lisa.symbolic.value.BinaryOperator;
-import it.unive.lisa.symbolic.value.Constant;
-import it.unive.lisa.symbolic.value.TernaryOperator;
-import it.unive.lisa.symbolic.value.UnaryOperator;
+import it.unive.lisa.symbolic.value.ValueExpression;
 
-public class IntervalParityDomain extends BaseNonRelationalValueDomain<IntervalParityDomain> {
-	private final Interval interval;
-	private final Parity parity;
+public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParityDomain, Interval, Parity> {
 
 	public IntervalParityDomain() {
-		this(Interval.TOP, Parity.TOP);
+		this(new Interval(), new Parity());
 	}
 
-	private IntervalParityDomain(Interval interval, Parity parity) {
-		Interval reducedInterval = new Interval(interval);
-		Parity reducedParity = parity;
-		Interval previousInterval;
-		Parity previousParity;
-		// Granger's product impl
-		do {
-			previousInterval = new Interval(reducedInterval);
-			previousParity = reducedParity;
-			reducedInterval = reduceInterval(previousInterval, previousParity);
-			reducedParity = reduceParity(previousParity, previousInterval);
-		} while (!reducedInterval.equals(previousInterval) || reducedParity != previousParity);
-		this.interval = reducedInterval;
-		this.parity = reducedParity;
+	/**
+	 * Builds the Cartesian product abstract domain.
+	 *
+	 * @param left  the left-hand side of the Cartesian product
+	 * @param right the right-hand side of the Cartesian product
+	 */
+	protected IntervalParityDomain(Interval left, Parity right) {
+		super(left, right);
 	}
 
-	private Interval reduceInterval(Interval interval, Parity parity) {
-		// [0,6] + Odd => [1,5]
-		if (!interval.isBottom && !interval.isTop && !parity.isBottom() && !parity.isTop()) {
-			Parity highParity = Parity.getFromInt(interval.high);
-			Parity lowParity = Parity.getFromInt(interval.low);
+	@Override
+	protected IntervalParityDomain mk(Interval left, Parity right) {
+		return new IntervalParityDomain(left, right);
+	}
 
-			Integer newHigh = interval.high;
-			Integer newLow = interval.low;
-
-			if (highParity != parity && newHigh != null) {
-				newHigh--;
-			}
-
-			if (lowParity != parity && newLow != null) {
-				newLow++;
-			}
-
-			return new Interval(newLow, newHigh);
+	private boolean isIntervalParityInvalid(Interval interval, Parity parity) {
+		if (interval.isSingleton() && !parity.isTop() && !parity.isBottom()) {
+			Integer value = interval.getLow();
+			Parity valueParity = Parity.getFromInt(value);
+			return !valueParity.equals(parity);
 		}
-		return interval;
-	}
-
-	private Parity reduceParity(Parity parity, Interval interval) {
-		// [N,N]+TOP where N ODD => [N,N]+ODD
-		// [N,N]+TOP where N EVEN => [N,N]+EVEN
-
-		// [N,N]+ODD where N EVEN => [N,N]+TOP
-		// [N,N]+EVEN where N ODD => [N,N]+TOP
-
-		// [2,2]+ODD =>
-
-		// else return parity
-		if (interval.isSingleton()) {
-			return Parity.getFromInt(interval.low);
-		}
-		return !parity.equals(Parity.getFromInt(interval.low)) ? Parity.TOP : parity;
-	}
-
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((interval == null) ? 0 : interval.hashCode());
-		result = prime * result + ((parity == null) ? 0 : parity.hashCode());
-		return result;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		IntervalParityDomain other = (IntervalParityDomain) obj;
-		if (interval != other.interval)
-			return false;
-		if (parity != other.parity)
-			return false;
-		return true;
-	}
-
-	@Override
-	public IntervalParityDomain top() {
-		return new IntervalParityDomain();
-	}
-
-	@Override
-	public boolean isTop() {
-		return interval.isTop && parity == Parity.TOP;
-	}
-
-	@Override
-	public IntervalParityDomain bottom() {
-		return new IntervalParityDomain(Interval.BOTTOM, Parity.BOTTOM);
-	}
-
-	@Override
-	public boolean isBottom() {
-		return interval.isBottom && parity == Parity.BOTTOM;
-	}
-
-	@Override
-	public StringRepresentation representation() {
-		return new StringRepresentation("[" + interval.toString() + " ; " + parity.toString() + "]");
-	}
-
-	@Override
-	protected IntervalParityDomain lubAux(IntervalParityDomain other) throws SemanticException {
-		return top();
-	}
-
-	@Override
-	protected IntervalParityDomain wideningAux(IntervalParityDomain other) throws SemanticException {
-		return lubAux(other);
-	}
-
-	@Override
-	protected boolean lessOrEqualAux(IntervalParityDomain other) throws SemanticException {
 		return false;
 	}
 
 	@Override
-	protected IntervalParityDomain evalNullConstant(ProgramPoint pp) {
-		return top();
+	protected Interval rhoLeft(IntervalParityDomain domain) {
+		Interval interval = domain.left;
+		Parity parity = domain.right;
+
+		if (isIntervalParityInvalid(interval, parity)) {
+			return interval.bottom();
+		}
+
+		if (!interval.isTop() && !parity.isTop() && !interval.isBottom() && !parity.isBottom()) {
+			if (interval.getLow() != null && Parity.getFromInt(interval.getLow() + 1).equals(parity)) {
+				return new Interval(interval.getLow() + 1, interval.getHigh());
+			}
+
+			if (interval.getHigh() != null && Parity.getFromInt(interval.getHigh() - 1).equals(parity)) {
+				return new Interval(interval.getLow(), interval.getHigh() - 1);
+			}
+		}
+		return interval;
 	}
 
 	@Override
-	protected IntervalParityDomain evalNonNullConstant(Constant constant, ProgramPoint pp) {
-		Interval newInterval = Interval.evalNonNullConstant(constant, pp);
-		Parity newParity = Parity.evalNonNullConstant(constant, pp);
-		return new IntervalParityDomain(newInterval, newParity);
+	protected Parity rhoRight(IntervalParityDomain domain) {
+		Interval interval = domain.left;
+		Parity parity = domain.right;
+
+		if (isIntervalParityInvalid(interval, parity)) {
+			return parity.bottom();
+		}
+
+		if (interval.isSingleton()) {
+			Integer value = interval.getLow();
+			return Parity.getFromInt(value);
+		}
+
+		return parity;
 	}
 
 	@Override
-	protected IntervalParityDomain evalUnaryExpression(UnaryOperator operator, IntervalParityDomain arg,
-			ProgramPoint pp) {
-		Interval newInterval = Interval.evalUnaryExpression(operator, arg.interval, pp);
-		Parity newParity = Parity.evalUnaryExpression(operator, arg.parity, pp);
-		return new IntervalParityDomain(newInterval, newParity);
-	}
+	protected IntervalParityDomain postEval(IntervalParityDomain result, ValueExpression expression,
+											ValueEnvironment<IntervalParityDomain> environment, ProgramPoint pp) throws SemanticException {
+		if (expression instanceof BinaryExpression) {
+			// if (p1 == even && p2 == even) => p1
+			// ([2,4], even) % ([8,10], even) => ([?,?], even)
 
-	@Override
-	protected IntervalParityDomain evalBinaryExpression(BinaryOperator operator, IntervalParityDomain left,
-			IntervalParityDomain right, ProgramPoint pp) {
+			BinaryOperator op = ((BinaryExpression) expression).getOperator();
+			if (op == BinaryOperator.NUMERIC_MOD) {
+				// ([a,b], p1) % ([c,d], p2)
+				// leftExpr rightExpr
 
-		Interval newInterval = Interval.evalBinaryExpression(operator, left.interval, right.interval, pp);
-		Parity newParity = Parity.evalBinaryExpression(operator, left.parity, right.parity, pp);
-		return new IntervalParityDomain(newInterval, newParity);
-	}
+				ValueExpression leftExpr = (ValueExpression) ((BinaryExpression) expression).getLeft();
+				ValueExpression rightExpr = (ValueExpression) ((BinaryExpression) expression).getRight();
+				Parity parityLeft = right.eval(leftExpr, makeRightEnv(environment), pp);
+				Interval intervalLeft = left.eval(leftExpr, makeLeftEnv(environment), pp);
+				Interval intervalRight = left.eval(rightExpr, makeLeftEnv(environment), pp);
 
-	@Override
-	protected IntervalParityDomain evalTernaryExpression(TernaryOperator operator, IntervalParityDomain left,
-			IntervalParityDomain middle, IntervalParityDomain right, ProgramPoint pp) {
-		return top();
+				// if (c == d == 2 && a == b) => ([0,1], p1)
+				// ([3,3], odd) % ([2,2], even) => ([0,1], odd)
+				if (intervalLeft.isSingleton() && intervalRight.isSingleton() && intervalRight.getHigh() == 2) {
+					return mk(result.left, parityLeft);
+				}
+			}
+		}
+
+		return result;
 	}
 }

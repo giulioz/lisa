@@ -1,4 +1,4 @@
-package it.unive.lisa.analysis.combination;
+package it.unive.lisa.analysis.nonrelational.combination;
 
 import it.unive.lisa.analysis.Lattice;
 import it.unive.lisa.analysis.SemanticDomain;
@@ -14,7 +14,7 @@ import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
 
 public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<C, T1, T2>, T1 extends NonRelationalValueDomain<T1> & Lattice<T1>, T2 extends NonRelationalValueDomain<T2> & Lattice<T2>>
-		implements NonRelationalValueDomain<C>, Lattice<C> {
+		implements NonRelationalValueDomain<C> {
 
 	/**
 	 * The left-hand side abstract domain.
