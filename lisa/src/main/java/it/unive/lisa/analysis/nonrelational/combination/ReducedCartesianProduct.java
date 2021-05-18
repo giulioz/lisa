@@ -99,10 +99,31 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 	 */
 	protected abstract C mk(T1 left, T2 right);
 
+	/**
+	 * Rho_1 for Granger Product. Refine the left domain using the whole left and right.
+	 *
+	 * @param domain left and right domains
+	 * @return refined left domain
+	 */
 	protected abstract T1 rhoLeft(C domain);
 
+	/**
+	 * Rho_2 for Granger Product. Refine the right domain using the whole left and right.
+	 *
+	 * @param domain left and right domains
+	 * @return refined right domain
+	 */
 	protected abstract T2 rhoRight(C domain);
 
+	/**
+	 * Refine some special cases when evaluating expressions, using the two domains.
+	 *
+	 * @param result the expected result from standard left-right evaluation
+	 * @param expression the evaluating expression
+	 * @param environment the current environment
+	 * @param pp the current program point
+	 * @return the refined expression result
+	 */
 	protected abstract C postEval(C result, ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp)
 			throws SemanticException;
 
