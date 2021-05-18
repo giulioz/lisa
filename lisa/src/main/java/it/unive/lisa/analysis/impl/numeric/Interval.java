@@ -185,12 +185,35 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 
 			return left.div(right);
 		case NUMERIC_MOD:
-			// [A,B] % [C,D] => [max(A,0), D]
-			// [1,50] % [2,5] => [1,5]
-			// TODO
-			if (right.isSingleton()) {
-				return new Interval(0, right.high - 1);
+			// [0,0] % [a,b] = [0,0]
+			if (left.isSingleton() && left.getHigh() == 0) {
+				return new Interval(0, 0);
 			}
+
+			// [a,a] % [b,b] = [a%b,a%b]
+			if (left.isSingleton() && right.isSingleton()) {
+				int result = left.getHigh() % right.getHigh();
+				return new Interval(result, result);
+			}
+
+			// We don't deal with infinite modulo
+			if (right.getHigh() != null && right.getLow() != null) {
+
+				// [a,b] % [c,d] = [0,(max(abs(c), abs(d))-1] (a>0)
+				if (left.getLow() != null && left.getLow() >= 0) {
+					int range = Math.max(Math.abs(right.getLow()), Math.abs(right.getHigh()));
+					return new Interval(0, range - 1);
+				}
+
+				// [a,b] % [c,d] = [-((max(abs(c), abs(d))-1),0] (b<=0)
+				if (left.getHigh() != null && left.getHigh() <= 0) {
+					int range = Math.max(Math.abs(right.getLow()), Math.abs(right.getHigh()));
+					return new Interval(-(range - 1), 0);
+				}
+
+				// We don't deal with [neg,pos] values, only [pos,pos] or [neg,neg]
+			}
+
 			return TOP;
 		default:
 			return top();
