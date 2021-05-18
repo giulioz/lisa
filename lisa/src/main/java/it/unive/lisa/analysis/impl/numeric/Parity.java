@@ -8,11 +8,10 @@ import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.BinaryOperator;
-import it.unive.lisa.symbolic.value.Constant;
-import it.unive.lisa.symbolic.value.Identifier;
-import it.unive.lisa.symbolic.value.UnaryOperator;
-import it.unive.lisa.symbolic.value.ValueExpression;
+import it.unive.lisa.symbolic.value.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The Parity abstract domain, tracking if a numeric value is even or odd,
@@ -147,6 +146,12 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 			else
 				return right.isOdd() ? EVEN : TOP;
 		case NUMERIC_MOD:
+			// if (p1 == even && p2 == even) => p1
+			// ([2,4], even) % ([8,10], even) => ([?,?], even)
+			// ([3,3], odd) % ([2,2], even) => ([0,1], odd)
+			if (right.isEven()) {
+				return left;
+			}
 			return TOP;
 		default:
 			return TOP;
@@ -200,13 +205,42 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 	protected ValueEnvironment<Parity> assumeBinaryExpression(
 			ValueEnvironment<Parity> environment, BinaryOperator operator, ValueExpression left,
 			ValueExpression right, ProgramPoint pp) throws SemanticException {
+		Map<Identifier, Parity> map = null;
+
+		if (environment.getMap() == null)
+			map = new HashMap<>();
+		else
+			map = new HashMap<>(environment.getMap());
+
 		switch (operator) {
 		case COMPARISON_EQ:
 			if (left instanceof Identifier)
 				environment = environment.assign((Identifier) left, right, pp);
 			else if (right instanceof Identifier)
 				environment = environment.assign((Identifier) right, left, pp);
+			if (left instanceof BinaryExpression
+					&& ((BinaryExpression)left).getOperator() == BinaryOperator.NUMERIC_MOD
+					&& ((BinaryExpression)left).getRight() instanceof Constant
+					&& ((Constant)((BinaryExpression)left).getRight()).getValue().equals(2)) {
+				Identifier ident = (Identifier) ((BinaryExpression) left).getLeft();
+				map.put(ident, EVEN);
+				return new ValueEnvironment<>(bottom(), map);
+			}
+//			else if (right instanceof Identifier)
+//				environment = environment.assign((Identifier) right, left, pp);
 			return environment;
+		case COMPARISON_NE:
+				if (left instanceof BinaryExpression
+						&& ((BinaryExpression)left).getOperator() == BinaryOperator.NUMERIC_MOD
+						&& ((BinaryExpression)left).getRight() instanceof Constant
+						&& ((Constant)((BinaryExpression)left).getRight()).getValue().equals(2)) {
+					Identifier ident = (Identifier) ((BinaryExpression) left).getLeft();
+					map.put(ident, ODD);
+					return new ValueEnvironment<>(bottom(), map);
+				}
+//			else if (right instanceof Identifier)
+//				environment = environment.assign((Identifier) right, left, pp);
+				return environment;
 		default:
 			return environment;
 		}

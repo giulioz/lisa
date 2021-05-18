@@ -77,30 +77,4 @@ public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParity
 
 		return parity;
 	}
-
-	@Override
-	protected IntervalParityDomain postEval(IntervalParityDomain result, ValueExpression expression,
-											ValueEnvironment<IntervalParityDomain> environment, ProgramPoint pp) throws SemanticException {
-		if (expression instanceof BinaryExpression) {
-			BinaryOperator op = ((BinaryExpression) expression).getOperator();
-			if (op == BinaryOperator.NUMERIC_MOD) {
-				// ([a,b], p1) % ([c,d], p2)
-				// leftExpr rightExpr
-
-				ValueExpression leftExpr = (ValueExpression) ((BinaryExpression) expression).getLeft();
-				ValueExpression rightExpr = (ValueExpression) ((BinaryExpression) expression).getRight();
-				Parity parityLeft = right.eval(leftExpr, makeRightEnv(environment), pp);
-				Parity parityRight = right.eval(rightExpr, makeRightEnv(environment), pp);
-
-				// if (p1 == even && p2 == even) => p1
-				// ([2,4], even) % ([8,10], even) => ([?,?], even)
-				// ([3,3], odd) % ([2,2], even) => ([0,1], odd)
-				if (parityRight.isEven()) {
-					return mk(result.left, parityLeft);
-				}
-			}
-		}
-
-		return result;
-	}
 }

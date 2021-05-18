@@ -115,18 +115,6 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 	 */
 	protected abstract T2 rhoRight(C domain);
 
-	/**
-	 * Refine some special cases when evaluating expressions, using the two domains.
-	 *
-	 * @param result the expected result from standard left-right evaluation
-	 * @param expression the evaluating expression
-	 * @param environment the current environment
-	 * @param pp the current program point
-	 * @return the refined expression result
-	 */
-	protected abstract C postEval(C result, ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp)
-			throws SemanticException;
-
 	private C grangerProduct(C value) {
 		T1 reducedLeft = value.left;
 		T2 reducedRight = value.right;
@@ -137,22 +125,6 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 			previousRight = reducedRight;
 			reducedLeft = rhoLeft(mk(previousLeft, previousRight));
 			reducedRight = rhoRight(mk(previousLeft, previousRight));
-		} while (!reducedLeft.equals(previousLeft) || reducedRight != previousRight);
-		return mk(reducedLeft, reducedRight);
-	}
-
-	private C grangerProductExp(C value, ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp)
-			throws SemanticException {
-		T1 reducedLeft = value.left;
-		T2 reducedRight = value.right;
-		T1 previousLeft;
-		T2 previousRight;
-		do {
-			previousLeft = reducedLeft;
-			previousRight = reducedRight;
-			C postEvalProcessed = postEval(mk(reducedLeft, reducedRight), expression, environment, pp);
-			reducedLeft = rhoLeft(postEvalProcessed);
-			reducedRight = rhoRight(postEvalProcessed);
 		} while (!reducedLeft.equals(previousLeft) || reducedRight != previousRight);
 		return mk(reducedLeft, reducedRight);
 	}
@@ -185,7 +157,7 @@ public abstract class ReducedCartesianProduct<C extends ReducedCartesianProduct<
 	public C eval(ValueExpression expression, ValueEnvironment<C> environment, ProgramPoint pp) throws SemanticException {
 		C value = mk(left.eval(expression, makeLeftEnv(environment), pp),
 				right.eval(expression, makeRightEnv(environment), pp));
-		return grangerProductExp(value, expression, environment, pp);
+		return grangerProduct(value);
 	}
 
 	@Override
