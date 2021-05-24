@@ -201,10 +201,15 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 		return isTop && other.isTop;
 	}
 
+	private boolean isModTwo(ValueExpression exp) {
+		return exp instanceof BinaryExpression && ((BinaryExpression) exp).getOperator() == BinaryOperator.NUMERIC_MOD
+				&& ((BinaryExpression) exp).getRight() instanceof Constant
+				&& ((Constant) ((BinaryExpression) exp).getRight()).getValue().equals(2);
+	}
+
 	@Override
-	protected ValueEnvironment<Parity> assumeBinaryExpression(
-			ValueEnvironment<Parity> environment, BinaryOperator operator, ValueExpression left,
-			ValueExpression right, ProgramPoint pp) throws SemanticException {
+	protected ValueEnvironment<Parity> assumeBinaryExpression(ValueEnvironment<Parity> environment,
+			BinaryOperator operator, ValueExpression left, ValueExpression right, ProgramPoint pp) throws SemanticException {
 		Map<Identifier, Parity> map = null;
 
 		if (environment.getMap() == null)
@@ -213,36 +218,50 @@ public class Parity extends BaseNonRelationalValueDomain<Parity> {
 			map = new HashMap<>(environment.getMap());
 
 		switch (operator) {
-		case COMPARISON_EQ:
-			if (left instanceof Identifier)
-				environment = environment.assign((Identifier) left, right, pp);
-			else if (right instanceof Identifier)
-				environment = environment.assign((Identifier) right, left, pp);
-			if (left instanceof BinaryExpression
-					&& ((BinaryExpression)left).getOperator() == BinaryOperator.NUMERIC_MOD
-					&& ((BinaryExpression)left).getRight() instanceof Constant
-					&& ((Constant)((BinaryExpression)left).getRight()).getValue().equals(2)) {
-				Identifier ident = (Identifier) ((BinaryExpression) left).getLeft();
-				map.put(ident, EVEN);
-				return new ValueEnvironment<>(bottom(), map);
-			}
-//			else if (right instanceof Identifier)
-//				environment = environment.assign((Identifier) right, left, pp);
-			return environment;
-		case COMPARISON_NE:
-				if (left instanceof BinaryExpression
-						&& ((BinaryExpression)left).getOperator() == BinaryOperator.NUMERIC_MOD
-						&& ((BinaryExpression)left).getRight() instanceof Constant
-						&& ((Constant)((BinaryExpression)left).getRight()).getValue().equals(2)) {
+			case COMPARISON_EQ:
+				if (left instanceof Identifier)
+					environment = environment.assign((Identifier) left, right, pp);
+				else if (right instanceof Identifier)
+					environment = environment.assign((Identifier) right, left, pp);
+
+				// If we check c % 2 == 0 we can satisfy it with parity only!
+				if (isModTwo(left) && right instanceof Constant) {
 					Identifier ident = (Identifier) ((BinaryExpression) left).getLeft();
-					map.put(ident, ODD);
+					if (((Constant) right).getValue().equals(0))
+						map.put(ident, EVEN);
+					else if (((Constant) right).getValue().equals(1))
+						map.put(ident, ODD);
+					return new ValueEnvironment<>(bottom(), map);
+				} else if (isModTwo(right)) {
+					Identifier ident = (Identifier) ((BinaryExpression) right).getLeft();
+					if (((Constant) right).getValue().equals(0))
+						map.put(ident, EVEN);
+					else if (((Constant) right).getValue().equals(1))
+						map.put(ident, ODD);
 					return new ValueEnvironment<>(bottom(), map);
 				}
-//			else if (right instanceof Identifier)
-//				environment = environment.assign((Identifier) right, left, pp);
 				return environment;
-		default:
-			return environment;
+
+			case COMPARISON_NE:
+				// same for not equal
+				if (isModTwo(left)) {
+					Identifier ident = (Identifier) ((BinaryExpression) left).getLeft();
+					if (((Constant) right).getValue().equals(0))
+						map.put(ident, ODD);
+					else if (((Constant) right).getValue().equals(1))
+						map.put(ident, EVEN);
+					return new ValueEnvironment<>(bottom(), map);
+				} else if (isModTwo(right)) {
+					Identifier ident = (Identifier) ((BinaryExpression) right).getLeft();
+					if (((Constant) right).getValue().equals(0))
+						map.put(ident, ODD);
+					else if (((Constant) right).getValue().equals(1))
+						map.put(ident, EVEN);
+					return new ValueEnvironment<>(bottom(), map);
+				}
+				return environment;
+			default:
+				return environment;
 		}
 	}
 }
