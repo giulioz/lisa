@@ -198,20 +198,19 @@ public class Interval extends BaseNonRelationalValueDomain<Interval> {
 
 			// We don't deal with infinite modulo
 			if (right.getHigh() != null && right.getLow() != null) {
+				int range = Math.max(Math.abs(right.getLow()), Math.abs(right.getHigh()));
 
 				// [a,b] % [c,d] = [0,(max(abs(c), abs(d))-1] (a>0)
 				if (left.getLow() != null && left.getLow() >= 0) {
-					int range = Math.max(Math.abs(right.getLow()), Math.abs(right.getHigh()));
 					return new Interval(0, range - 1);
 				}
 
 				// [a,b] % [c,d] = [-((max(abs(c), abs(d))-1),0] (b<=0)
 				if (left.getHigh() != null && left.getHigh() <= 0) {
-					int range = Math.max(Math.abs(right.getLow()), Math.abs(right.getHigh()));
 					return new Interval(-(range - 1), 0);
 				}
 
-				// We don't deal with [neg,pos] values, only [pos,pos] or [neg,neg]
+				return new Interval(-(range - 1), range - 1);
 			}
 
 			return TOP;

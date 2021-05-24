@@ -7,10 +7,10 @@ class reducedProduct {
 
 	test2(e) {
 		def x = 0;
-		def y = 5 * 10 - 2;
-		def k = x / 2;
 		x = x + 1;
-		f = e % 10;
+		def k = x / 2;
+		def f = e % 10;
+		def y = 5 * 10 - f;
 	}
 
 	test3() {
