@@ -5,11 +5,12 @@ class reducedProduct {
 		def w = -1;
 	}
 
-	test2() {
+	test2(e) {
 		def x = 0;
 		def y = 5 * 10 - 2;
 		def k = x / 2;
 		x = x + 1;
+		f = e % 10;
 	}
 
 	test3() {
@@ -29,12 +30,12 @@ class reducedProduct {
             def a_p = x % 2 * 2 + 2;
             def b_p = x % 2 * 2 + 8;
             def c = a_p % b_p;
-            def e = c % 2;
-            if (e == 0)
+            def mod = 1 + 1;
+            def eq = 0;
+            if (c % mod == eq)
                 return 1;
             else
                 return 2;
-            return d;
         } else
             return 0;
 	}
