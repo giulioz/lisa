@@ -1,14 +1,13 @@
 package it.unive.lisa.analysis.nonrelational.value.impl;
 
+import it.unive.lisa.analysis.SemanticDomain;
 import it.unive.lisa.analysis.SemanticException;
-import it.unive.lisa.analysis.nonrelational.combination.ReducedCartesianProduct;
 import it.unive.lisa.analysis.impl.numeric.Interval;
 import it.unive.lisa.analysis.impl.numeric.Parity;
+import it.unive.lisa.analysis.nonrelational.combination.ReducedCartesianProduct;
 import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.BinaryExpression;
-import it.unive.lisa.symbolic.value.BinaryOperator;
-import it.unive.lisa.symbolic.value.ValueExpression;
+import it.unive.lisa.symbolic.value.*;
 
 public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParityDomain, Interval, Parity> {
 
@@ -76,5 +75,52 @@ public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParity
 		}
 
 		return parity;
+	}
+
+	@Override
+	public SemanticDomain.Satisfiability satisfies(ValueExpression expression,
+			ValueEnvironment<IntervalParityDomain> environment, ProgramPoint pp) throws SemanticException {
+		if (expression instanceof UnaryExpression) {
+			UnaryExpression unary = (UnaryExpression) expression;
+
+			if (unary.getOperator() == UnaryOperator.LOGICAL_NOT)
+				return satisfies((ValueExpression) unary.getExpression(), environment, pp).negate();
+		}
+
+		// SPECIAL CASE: modulo 2 check equals can be satisfied checking only parity!
+		if (expression instanceof BinaryExpression && ((BinaryExpression) expression).getLeft() instanceof BinaryExpression
+				&& ((BinaryExpression) ((BinaryExpression) expression).getLeft()).getOperator() == BinaryOperator.NUMERIC_MOD) {
+			BinaryExpression comparison = (BinaryExpression) expression;
+			BinaryExpression modulo = (BinaryExpression) comparison.getLeft();
+
+			IntervalParityDomain equalsValue = eval((ValueExpression) comparison.getRight(), environment, pp);
+			IntervalParityDomain modValue = eval((ValueExpression) modulo.getRight(), environment, pp);
+			IntervalParityDomain value = eval((ValueExpression) modulo.getLeft(), environment, pp);
+
+			Integer equalsValueInt = equalsValue.left.isSingleton() ? equalsValue.left.getHigh() : -1;
+			Integer modValueInt = modValue.left.isSingleton() ? modValue.left.getHigh() : -1;
+			Parity valueParity = value.right;
+
+			switch (comparison.getOperator()) {
+				// value % modValue == equalsValue
+				case COMPARISON_EQ:
+					if (modValueInt.equals(2) && valueParity.equals(Parity.getFromInt(equalsValueInt))) {
+						return SemanticDomain.Satisfiability.SATISFIED;
+					} else {
+						return SemanticDomain.Satisfiability.NOT_SATISFIED;
+					}
+
+				// value % modValue != equalsValue
+				case COMPARISON_NE:
+					if (modValueInt.equals(2) && valueParity.equals(Parity.getFromInt(equalsValueInt))) {
+						return SemanticDomain.Satisfiability.NOT_SATISFIED;
+					} else {
+						return SemanticDomain.Satisfiability.SATISFIED;
+					}
+				default:
+			}
+		}
+
+		return super.satisfies(expression, environment, pp);
 	}
 }
