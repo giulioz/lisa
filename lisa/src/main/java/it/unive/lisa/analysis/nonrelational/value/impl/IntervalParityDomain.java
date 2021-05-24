@@ -99,12 +99,14 @@ public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParity
 
 			Integer equalsValueInt = equalsValue.left.isSingleton() ? equalsValue.left.getHigh() : -1;
 			Integer modValueInt = modValue.left.isSingleton() ? modValue.left.getHigh() : -1;
+			Integer valueInt = value.left.isSingleton() ? value.left.getHigh() : -1;
 			Parity valueParity = value.right;
 
 			switch (comparison.getOperator()) {
 				// value % modValue == equalsValue
 				case COMPARISON_EQ:
-					if (modValueInt.equals(2) && valueParity.equals(Parity.getFromInt(equalsValueInt))) {
+					if (modValueInt.equals(2) && valueParity.equals(Parity.getFromInt(equalsValueInt)) 
+							&& (valueInt.equals(0) || valueInt.equals(1))) {
 						return SemanticDomain.Satisfiability.SATISFIED;
 					} else {
 						return SemanticDomain.Satisfiability.NOT_SATISFIED;
@@ -112,7 +114,8 @@ public class IntervalParityDomain extends ReducedCartesianProduct<IntervalParity
 
 				// value % modValue != equalsValue
 				case COMPARISON_NE:
-					if (modValueInt.equals(2) && valueParity.equals(Parity.getFromInt(equalsValueInt))) {
+					if (modValueInt.equals(2) && valueParity.equals(Parity.getFromInt(equalsValueInt)) 
+							&& (valueInt.equals(0) || valueInt.equals(1))) {
 						return SemanticDomain.Satisfiability.NOT_SATISFIED;
 					} else {
 						return SemanticDomain.Satisfiability.SATISFIED;
